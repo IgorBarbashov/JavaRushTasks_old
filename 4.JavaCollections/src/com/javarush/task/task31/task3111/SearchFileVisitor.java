@@ -12,10 +12,10 @@ import java.util.List;
 import java.util.Objects;
 
 public class SearchFileVisitor extends SimpleFileVisitor<Path> {
-    public String partOfName;
+    private String partOfName;
     private String partOfContent;
-    private Integer minSize;
-    private Integer maxSize;
+    private int minSize;
+    private int maxSize;
     private List<Path> foundFiles = new ArrayList<>();
 
     public void setPartOfName(String partOfName) {
@@ -26,7 +26,7 @@ public class SearchFileVisitor extends SimpleFileVisitor<Path> {
         this.partOfContent = partOfContent;
     }
 
-    public void setMinSize( int minSize) {
+    public void setMinSize(int minSize) {
         this.minSize = minSize;
     }
 
@@ -40,28 +40,38 @@ public class SearchFileVisitor extends SimpleFileVisitor<Path> {
 
     @Override
     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        byte[] content = Files.readAllBytes(file); // размер файла: content.length
+        byte[] content = Files.readAllBytes(file);
         boolean isFileValid = true;
 
-        if (this.partOfName != null) {
-            System.out.println("validate partOfName: " + this.partOfName);
-        }
-
-        if (this.partOfContent != null) {
-            System.out.println("validate partOfContent: " + this.partOfContent);
-        }
-
-        if (this.maxSize != null) {
+        if (isFileValid && this.maxSize != 0) {
             if (content.length > this.maxSize) {
                 isFileValid = false;
             }
-            System.out.println("validate maxSize: " + this.maxSize);
         }
-        if (this.minSize != null) {
+
+        if (isFileValid && this.minSize != 0) {
             if (content.length < this.minSize) {
                 isFileValid = false;
             }
-            System.out.println("validate minSize: " + this.minSize);
+        }
+
+        if (isFileValid && this.partOfName != null) {
+            if (!file.getFileName().toString().contains(this.partOfName)) {
+                isFileValid = false;
+            }
+        }
+
+        if (isFileValid && this.partOfContent != null) {
+            List<String> textContent = Files.readAllLines(file);
+            boolean isContentValid = false;
+            for (String line : textContent) {
+                if (line.contains(this.partOfContent)) {
+                    isContentValid = true;
+                }
+            }
+            if (!isContentValid) {
+                isFileValid = false;
+            }
         }
 
         if (isFileValid) {
