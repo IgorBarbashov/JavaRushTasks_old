@@ -6,7 +6,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Objects;
 
 /* 
 Поиск скрытых файлов
@@ -42,13 +41,15 @@ public class Solution extends SimpleFileVisitor<Path> {
         return failed;
     }
 
-    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
         if (file.toString().endsWith(".zip") || file.toString().endsWith(".rar")) {
             this.archived.add(file.toString());
         }
-        return FileVisitResult.CONTINUE;
+        return super.visitFile(file, attrs);
     }
 
+    @Override
     public FileVisitResult visitFileFailed(Path file, IOException exc) {
         this.failed.add(file.toString());
         return FileVisitResult.SKIP_SUBTREE;
