@@ -23,21 +23,16 @@ public class Solution {
     }
 
     public static Path downloadFile(String urlString, Path downloadDirectory) throws IOException {
+        String fileName = urlString.split("/")[urlString.split("/").length - 1];
+        Path downloadPath = downloadDirectory.resolve(fileName);
+
         URL url = new URL(urlString);
+        InputStream inputStream = url.openStream();
 
-        try (InputStream inputStream = url.openStream()) {
-            String[] urlArray = urlString.split("/");
-            int urlArrayLength = urlArray.length;
-            String fileName = urlArray[urlArrayLength - 1];
+        Path tempFile = Files.createTempFile(null, null);
+        Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
 
-            Path tempFile = Files.createTempFile("_jr-", "-file");
-            Files.copy(inputStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            Path targetFile = Files.move(
-                    tempFile,
-                    Paths.get(downloadDirectory.toString() + "/" + fileName),
-                    StandardCopyOption.REPLACE_EXISTING
-            );
-            return targetFile;
-        }
+        Files.move(tempFile, downloadPath);
+        return downloadPath;
     }
 }
