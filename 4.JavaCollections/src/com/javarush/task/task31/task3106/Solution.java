@@ -1,67 +1,49 @@
 package com.javarush.task.task31.task3106;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 /* 
 Разархивируем файл
 */
 
-class SequenceEnumeration implements Enumeration<BufferedInputStream> {
-    private Queue<BufferedInputStream> inputStreams;
-
-    public SequenceEnumeration(Queue<BufferedInputStream> inputStreams) {
-        this.inputStreams = inputStreams;
-    }
-
-    @Override
-    public boolean hasMoreElements() {
-        return !inputStreams.isEmpty();
-    }
-
-    @Override
-    public BufferedInputStream nextElement() {
-        return this.inputStreams.remove();
-    }
-}
-
 public class Solution {
     public static void main(String[] args) throws IOException {
-        Queue<BufferedInputStream> inputStreams = new LinkedList<>();
+        File result = new File(args[0]);    //Файл результата, по совместительству имя этого файла мы ищем в архиве
+        if (!result.exists()) {
+            result.createNewFile();
+        }
+        List<FileInputStream> fileInputStreams = new ArrayList<>(); //Список входящих стримов из разных кусков архива
 
-        for (int i = 1; i < args.length; i++) {
-            inputStreams.add(new BufferedInputStream(new FileInputStream(args[i])));
+        //Расставляем имена файлов архива в нужном нам порядке
+        List<String> fileNames = new ArrayList<>();
+        fileNames.addAll(Arrays.asList(args).subList(1, args.length));
+        Collections.sort(fileNames);
+
+        //Создаем входящий стрим для каждого куска архива
+        for (String name : fileNames) {
+            fileInputStreams.add(new FileInputStream(name));
         }
 
-        Path tempFile = Files.createTempFile("jr-", ".zip");
+        try (ZipInputStream is = new ZipInputStream(new SequenceInputStream(Collections.enumeration(fileInputStreams))))    //Входящий стрим общего архива
+        {
+            while (true) {
+                ZipEntry entry = is.getNextEntry();
+                if (entry == null) break;
 
-        try (
-                SequenceInputStream inputStream = new SequenceInputStream(new SequenceEnumeration(inputStreams));
-                BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tempFile.toString()));
-        ) {
-            int symbol;
-            while ((symbol = inputStream.read()) != -1) {
-                outputStream.write(symbol);
-            }
-        }
-
-        try (
-                ZipInputStream zip = new ZipInputStream(new FileInputStream(tempFile.toString()));
-                BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(args[0]));
-        ) {
-            ZipEntry entry;
-            while ((entry = zip.getNextEntry()) != null) {
-                int symbol;
-                while ((symbol = zip.read()) != -1) {
-                    outputStream.write(symbol);
+                try (OutputStream os = new BufferedOutputStream(new FileOutputStream(result))) {
+                    final int bufferSize = 1024;
+                    byte[] buffer = new byte[bufferSize];
+                    for (int readBytes; (readBytes = is.read(buffer, 0, bufferSize)) > -1; ) {
+                        os.write(buffer, 0, readBytes);
+                    }
+                    os.flush();
                 }
-                zip.closeEntry();
             }
         }
     }
