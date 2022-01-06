@@ -6,11 +6,26 @@ import java.util.Collection;
 import java.util.List;
 
 /* 
-Построй дерево(2)
+Построй дерево(3)
 */
 
 public class CustomTree extends AbstractList<String> implements Cloneable, Serializable {
 
+    static class Entry<T> implements Serializable {
+        String elementName;
+        boolean availableToAddLeftChildren, availableToAddRightChildren;
+        Entry<T> parent, leftChild, rightChild;
+
+        public Entry(String elementName) {
+            this.elementName = elementName;
+            this.availableToAddLeftChildren = true;
+            this.availableToAddRightChildren = true;
+        }
+
+        public boolean isAvailableToAddChildren() {
+            return this.availableToAddLeftChildren || this.availableToAddRightChildren;
+        }
+    }
 
     @Override
     public String get(int index) {
